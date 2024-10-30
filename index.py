@@ -8,14 +8,12 @@ import torch.nn as nn
 
 batch_size = 100
 input_size = 96 * 96 # 96x96
-learning_rate = 0.001
-epochs = 2
+learning_rate = 0.0001
+epochs = 10
 classes = ('airplane', 'bird', 'car', 'cat', 'deer', 'dog', 'horse', 'monkey', 'ship', 'truck')
 output_size = len(classes)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-# 1) process data
 
 transform = transforms.Compose(
     [transforms.ToTensor(),
@@ -27,25 +25,19 @@ test_data = torchvision.datasets.STL10(root='./data', split='test', transform=tr
 train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True)
 test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size, shuffle=False)
 
-# images, labels = next(iter(train_loader))
-# print(images)
-# print(labels)
-
-# print('train_loader', train_data)
-kernel_size1 = 5 #filter size
-# kernel_size2 = 5
+kernel_size = 5 # filter size
 class ConvFerNet(nn.Module):
     def __init__(self):
         super(ConvFerNet, self).__init__()
         # conv output = ((W - F) + 2P)/S + 1 F=filter_size, W=inputSize, P=padding, S=stride
-        self.convL1 = torch.nn.Conv2d(3, 6, kernel_size1)
+        self.convL1 = torch.nn.Conv2d(3, 6, kernel_size)
         self.pool = torch.nn.MaxPool2d(2, 2) #cuts inputs in half
-        self.convL2 = torch.nn.Conv2d(6, 16, kernel_size1)
+        self.convL2 = torch.nn.Conv2d(6, 16, kernel_size)
         self.linL1 = torch.nn.Linear(16 * 21 * 21, 1200)
         self.linL2 = torch.nn.Linear(1200, 400)
         self.linL3 = torch.nn.Linear(400, 84)
         self.linL4 = torch.nn.Linear(84, output_size)
-        self.relu = torch.nn.ReLU()
+        self.relu = torch.nn.LeakyReLU()
     
     def forward(self, x):
         x = self.pool(self.relu(self.convL1(x)))
@@ -61,7 +53,7 @@ model = ConvFerNet().to(device)
 
 # loss and optimizer
 criterion = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 total_steps = len(train_loader)
 # train model
 for epoch in range(epochs):
@@ -76,8 +68,8 @@ for epoch in range(epochs):
         loss.backward() # calculate descent gradient for each weight
         optimizer.step() # update weights
 
-        if (i + 1) % 1000 == 0:
-            print(f'step: {i}/{total_steps}, loss: {loss.item():.4f}')
+        if (i + 1) % 10 == 0:
+            print(f'step: {i + 1}/{total_steps}, loss: {loss.item():.4f}')
 
 
 
